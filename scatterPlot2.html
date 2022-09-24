@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scatter Plot</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <!-- <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script> -->
+  <script>
+    const req = new XMLHttpRequest();
+    req.open('GET', 'https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json', true);
+    req.send();
+    req.onload = function(){
+      const json = JSON.parse(req.responseText);
+      const paddingX = 40;
+      const paddingY = 40;
+      const width = 900;
+      const height = 500;
+
+      const scaleX = d3.scaleTime();
+      const year = json.map(item => new Date('' + item.Year));
+      scaleX.domain([d3.min(year), d3.max(year)]);
+      scaleX.range([paddingX*2, width-paddingX]);
+
+      const scaleY = d3.scaleTime();
+      const time = json.map(item => new Date(item.Seconds * 1000));
+      scaleY.domain([d3.min(time), d3.max(time)]);
+      scaleY.range([paddingY, height-paddingY*1.5]);
+
+      d3.select('#canvas')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .selectAll('a')
+        .data(json)
+        .enter()
+        .append('a')
+        .attr('href', d => d.URL)
+        .attr('target', '_blank')
+        .append('circle')
+        .attr('cx', d => scaleX(new Date('' + d.Year)))
+        .attr('cy', d => scaleY(new Date(d.Seconds * 1000)))
+        .attr('r', 5)
+        .attr('fill', d => d.Doping=='' ? 'rgba(157, 24, 247, 0.85)' : 'rgba(247, 24, 79, 0.85)')
+        .style('stroke', 'black')
+        .attr('class', 'dot')
+        .attr('data-xvalue', d => d.Year)
+        .attr('data-yvalue', d => new Date(d.Seconds * 1000))
+        .attr('data-time', d => d.Time)
+        .attr('data-name', d => d.Name + ', ' + d.Nationality);
+      
+        const xAxis = d3.axisBottom(scaleX);
+        d3.select('svg')
+          .append('g')
+          .attr('transform', 'translate(0,' + (height-40) + ')')
+          .attr('id', 'x-axis')
+          .call(xAxis)
+          .append('text')
+          .attr('x', width - paddingX)
+          .attr('y', 25)
+          .attr('fill', 'black')
+          .style('font-size', '15px')
+          .text('Year');
+        
+        const yAxis = d3.axisLeft(scaleY);
+        d3.select('svg')
+          .append('g')
+          .attr('transform', 'translate(' + (paddingX+20) + ', 0)')
+          .attr('id', 'y-axis')
+          .call(yAxis.tickFormat(d3.timeFormat('%M:%S')))
+          .append('text')
+          .attr('y', 30)
+          .attr('x', 20)
+          .attr('fill', 'black')
+          .style('font-size', '15px')
+          .text('Time(mins)');
+        
+        const tooltip = d3.select('#tooltip')
+          .style('position', 'absolute')
+          .style('z-index', '10')
+          .style('visibility', 'hidden');
+
+        d3.selectAll('circle').on('mouseover', function(){
+          const data_year = d3.select(this).attr('data-xvalue');
+          const data_time = d3.select(this).attr('data-time');
+          const data_name = d3.select(this).attr('data-name');
+          d3.select('#tooltip')
+            .attr('data-year', data_year)
+            .style('visibility', 'visible')
+            .style('top', (event.pageY) + 'px')
+            .style('left', (event.pageX) + 'px')
+            .select('p')
+            .html(data_name + '<br>' + 'Year: ' + data_year + ', Time: ' + data_time + '\n');
+        });
+        
+        d3.selectAll('circle').on('mouseout', ()=> tooltip.style('visibility', 'hidden'));
+
+        const legend = d3.select('svg')
+          .append('g')
+          .attr('id', 'legend');
+        const legend1 = legend.append('g')
+          .attr('class', 'legend-label')
+          .attr('transform', 'translate(850, 180)');
+        legend1.append('rect')
+          .style('width', '18px')
+          .style('height', '18px')
+          .attr('fill', 'rgba(157, 24, 247, 1)');
+        legend1.append('text')
+          .text('No doping allegations')
+          .attr('text-anchor', 'end')
+          .attr('x', '-5')
+          .attr('y', '12')
+          .style('font-size', '14px');
+        const legend2 = legend.append('g')
+          .attr('class', 'legend-label')
+          .attr('transform', 'translate(850, 210)');
+        legend2.append('rect')
+          .style('width', '18px')
+          .style('height', '18px')
+          .attr('fill', 'rgba(247, 24, 79, 1)');
+        legend2.append('text')
+          .text('Riders with doping allegations')
+          .attr('text-anchor', 'end')
+          .attr('x', '-5')
+          .attr('y', '12')
+          .style('font-size', '14px');
+
+    }
+  </script>
+  <div id="container">
+    <h1 id="title">Doping in Professional Bicycle Racing</h1>
+    <h2 id="desc">35 Fastest times up Alpe d'Huez</h2>
+    <div id="canvas">
+      <div id="tooltip">
+        <p></p>
+      </div>
+    </div>
+    <p id="source">Data: <a href="https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json">https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json</a></p>
+  </div>
+</body>
+</html>
